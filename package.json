@@ -10,7 +10,9 @@
     "deploy": "echo list.cotterslist.com > dist/CNAME && cp serviceworker.js dist/ && cp manifest.json dist/ && gh-pages -d dist"
   },
   "dependencies": {
+    "ar.js": "^2.2.2",
     "register-service-worker": "^1.7.2",
+    "three": "^0.178.0",
     "vue": "^3.3.4"
   },
   "devDependencies": {

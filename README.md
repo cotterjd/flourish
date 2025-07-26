@@ -10,29 +10,12 @@ A Progressive Web App (PWA) for tracking your garden plants and their care sched
 4. `npm run dev` (or `yarn dev`)
 5. Navigate to localhost:5173 in your browser
 
-## Features
+![Screenshot_20240219_141926](https://github.com/cotterjd/ranked-list/assets/2576700/c086b0fd-3eff-4865-b647-ee8c4c51e7f3)
 
-- Track plants in your garden
-- Monitor plant care schedules
-- Progressive Web App functionality
-- Works offline
-- Mobile-friendly interface
-
-## Development
-
-This project is built with:
-- Vue 3 with TypeScript
-- Vite for build tooling
-- Service Worker for PWA functionality
-
-## Build
-
-To build for production:
-```bash
-npm run build
-```
-
-The built files will be in the `dist` directory.
+## Deploy
+1. build
+2. update js and css values in service worker
+3. yarn deploy
 
 # Vue 3 + TypeScript + Vite
 

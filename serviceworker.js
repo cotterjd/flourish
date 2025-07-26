@@ -2,12 +2,15 @@ const CACHE_NAME = 'garden-app-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
+  '/assets/index-ffaeb7b9.css',
+  '/assets/index-b36a00cf.js',
   '/icon.png',
-  // CSS and JS files will be added here after build
+  // '/offline.html',
   // Add more URLs to cache here
 ];
 
 self.addEventListener('install', (event) => {
+  self.registration.scope = 'https://list.cotterslist.com';
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(urlsToCache);
@@ -42,8 +45,8 @@ self.addEventListener('fetch', (event) => {
         return response;
       });
     }).catch(() => {
-      // If both the network and the cache fail, show the main page
-      return caches.match('/index.html');
+      // If both the network and the cache fail, show an offline fallback
+      return caches.match('/index.html'); // TODO: make offline file? 
     })
   );
 });
