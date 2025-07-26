@@ -7,7 +7,7 @@
     "dev": "vite",
     "predeploy": "vue-tsc && vite build",
     "preview": "vite preview",
-    "deploy": "echo list.cotterslist.com > dist/CNAME && cp serviceworker.js dist/ && cp manifest.json dist/ && gh-pages -d dist"
+    "deploy": "cp serviceworker.js dist/ && cp manifest.json dist/ && gh-pages -d dist"
   },
   "dependencies": {
     "ar.js": "^2.2.2",
