@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  base: '/flourish/',
   server: {
     https: false, // Set to true if you need HTTPS for camera access
     host: true, // Allow access from network
