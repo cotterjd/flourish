@@ -1,6 +1,6 @@
 {
   "name": "Garden App",
-  "start_url": "/",
+  "start_url": "https://cotterslist.com",
   "display": "standalone",
   "icons": [
     {
