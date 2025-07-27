@@ -56,8 +56,7 @@
     
     <main>
       <div class="welcome">
-        <h2>Welcome to your digital garden!</h2>
-        <p>Start by adding a photo of a place you want help with</p>
+        <p v-if="userType === 'customer'">Start by adding a photo of a place you want help with</p>
         
         <div class="actions">
           <button class="btn-secondary" @click="viewGarden">View Projects</button>
