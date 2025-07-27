@@ -61,7 +61,7 @@
         
         <div class="actions">
           <button class="btn-secondary" @click="viewGarden">View Projects</button>
-          <button class="btn-ar" @click="openAR">Add Photo</button>
+          <button class="btn-ar" @click="openAR">{{this.userType === `customer` ? 'Add Photo' : 'Finish Job'}}</button>
         </div>
         
         <div class="features">
