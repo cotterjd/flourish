@@ -54,7 +54,7 @@ export interface AskQuestionResponse {
 // This method sends image data and tasks to the backend for AI analysis.
 export const generateReport = async (args: GenerateArgs): Promise<ReportResponse> => {
   try {
-    const response = await fetch('http://10.132.122.162:5000/analyze_landscaping', {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/analyze_landscaping`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
