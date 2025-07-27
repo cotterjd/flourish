@@ -2,8 +2,8 @@ const CACHE_NAME = 'garden-app-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/assets/index-93d29e52.css',
-  '/assets/index-99d2fd4a.js',
+  '/assets/index-906151bf.css',
+  '/assets/index-eea74478.js',
   '/icon.png',
   // '/offline.html',
   // Add more URLs to cache here
