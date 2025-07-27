@@ -17,16 +17,70 @@ export interface GenerateArgs {
   requested_tasks: string; // Optional tasks to perform
 }
 
-// add route for http://10.132.122.162:5000/analyze_landscaping
-export const generateReport = (args: GenerateArgs) => {
-  return fetch('http://10.132.122.162:5000/analyze_landscaping', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(args)
-  });
+// Interface for backend response from analyze_landscaping
+export interface ReportResponse {
+  report: string;
+  before_analysis_text: string;
+  original_tasks_text: string;
+  error?: string; // Add optional error field
 }
+
+// ============================================================================
+// HTTP POST Methods
+// ============================================================================
+
+// Route for http://10.132.122.162:5000/analyze_landscaping
+// This method sends image data and tasks to the backend for AI analysis.
+export const generateReport = async (args: GenerateArgs): Promise<ReportResponse> => {
+  try {
+    const response = await fetch('http://10.132.122.162:5000/analyze_landscaping', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(args)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      // Throw an error with the backend's message for better debugging
+      throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+    }
+
+    return response.json(); // Returns a Promise that resolves with the parsed JSON data
+  } catch (error) {
+    console.error("Error generating report:", error);
+    throw error; // Re-throw to be caught by the calling function
+  }
+};
+
+// Placeholder for a future POST method to add/update plant data on a backend server.
+// This would require a corresponding Flask route (e.g., '/plants') in app.py.
+// export const savePlantToServer = async (plant: Plant): Promise<Plant> => {
+//   try {
+//     const response = await fetch('http://10.132.122.162:5000/plants', {
+//       method: 'POST', // Or PUT for updates
+//       headers: {
+//         'Content-Type': 'application/json'
+//       },
+//       body: JSON.stringify(plant)
+//     });
+
+//     if (!response.ok) {
+//       const errorData = await response.json();
+//       throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+//     }
+
+//     return response.json(); // Returns the saved plant data from the server
+//   } catch (error) {
+//     console.error("Error saving plant to server:", error);
+//     throw error;
+//   }
+// };
+
+// ============================================================================
+// Local Storage Utilities (Client-side only)
+// ============================================================================
 
 export const storage = {
   // Save data to localStorage
@@ -91,6 +145,10 @@ export const plantStorage = {
     plantStorage.savePlants(filteredPlants);
   }
 };
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
 
 // Utility function to generate unique IDs
 export const generateId = (): string => {
