@@ -11,18 +11,22 @@ export interface Plant {
   location?: string;
 }
 
+// Updated: Added contractor_accomplishments
 export interface GenerateArgs {
   after_image: string; // Base64 encoded image
-  before_image: string; // Optional Base64 encoded image
-  requested_tasks: string; // Optional tasks to perform
+  before_image: string; // Base64 encoded image
+  requested_tasks: string; // Newline-separated string of tasks
+  contractor_accomplishments?: string; // Optional text from contractor
 }
 
 // Interface for backend response from analyze_landscaping
+// Updated: Added before_analysis_text and original_tasks_text
 export interface ReportResponse {
-  report: string;
-  before_analysis_text: string;
-  original_tasks_text: string;
-  error?: string; // Add optional error field
+  report: string; // The full markdown report
+  before_analysis_text: string; // AI's analysis of the before image
+  original_tasks_text: string; // The user's original requested tasks
+  contractor_accomplishments_text?: string; // Contractor's claimed accomplishments (if provided)
+  error?: string; // Optional error field from the backend
 }
 
 // ============================================================================
@@ -50,6 +54,8 @@ export const generateReport = async (args: GenerateArgs): Promise<ReportResponse
     return response.json(); // Returns a Promise that resolves with the parsed JSON data
   } catch (error) {
     console.error("Error generating report:", error);
+    // You might want more specific error handling here for the UI
+    // For example, return a default ReportResponse with an error message
     throw error; // Re-throw to be caught by the calling function
   }
 };
