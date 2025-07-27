@@ -65,16 +65,16 @@
         
         <div class="features">
           <div class="feature-card">
-            <h3>🌿 Plant Tracking</h3>
-            <p>Keep track of your plants' growth and health</p>
+            <h3>🌿 Plant Suggestions</h3>
+            <p>Find inspiration with the help of AI</p>
           </div>
           <div class="feature-card">
             <h3>💧 Care Reminders</h3>
             <p>Never forget to water or fertilize your plants</p>
           </div>
           <div class="feature-card">
-            <h3>🔍 AR Experience</h3>
-            <p>See virtual plants in your real environment</p>
+            <h3>🔍 Find help</h3>
+            <p>Accept competitive bids on your project</p>
           </div>
         </div>
       </div>
