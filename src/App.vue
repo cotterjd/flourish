@@ -1,5 +1,51 @@
 <template>
   <div class="app">
+    <!-- Hamburger Menu -->
+    <div class="hamburger-menu">
+      <button @click="toggleMenu" class="hamburger-btn" :class="{ 'menu-open': showMenu }">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <!-- Menu Overlay -->
+      <div v-if="showMenu" class="menu-overlay" @click="closeMenu"></div>
+      
+      <!-- Menu Content -->
+      <div class="menu-content" :class="{ 'menu-open': showMenu }">
+        <div class="menu-header">
+          <h3>Select User Type</h3>
+          <button @click="closeMenu" class="menu-close">✕</button>
+        </div>
+        
+        <div class="menu-options">
+          <button 
+            @click="setUserType('contractor')" 
+            class="menu-option" 
+            :class="{ 'active': userType === 'contractor' }"
+          >
+            <span class="option-icon">🔨</span>
+            <span class="option-text">Contractor</span>
+            <span v-if="userType === 'contractor'" class="option-check">✓</span>
+          </button>
+          
+          <button 
+            @click="setUserType('customer')" 
+            class="menu-option" 
+            :class="{ 'active': userType === 'customer' }"
+          >
+            <span class="option-icon">🏠</span>
+            <span class="option-text">Customer</span>
+            <span v-if="userType === 'customer'" class="option-check">✓</span>
+          </button>
+        </div>
+        
+        <div class="menu-footer">
+          <p class="current-selection">Current: {{ userTypeDisplay }}</p>
+        </div>
+      </div>
+    </div>
+
     <!-- AR Camera Component -->
     <ARCamera v-if="showAR" @close="closeAR" @photo-uploaded="onPhotoUploaded" @analysis-complete="onAnalysisComplete" />
     
@@ -56,7 +102,14 @@ export default {
       version: packageJson.version,
       showAR: false,
       uploadedPhotos: [],
-      analysisResults: []
+      analysisResults: [],
+      showMenu: false,
+      userType: 'customer' // default to customer
+    }
+  },
+  computed: {
+    userTypeDisplay() {
+      return this.userType === 'contractor' ? 'Contractor 🔨' : 'Customer 🏠';
     }
   },
   methods: {
@@ -78,10 +131,26 @@ export default {
     },
     async onPhotoUploaded(photoData) {
       console.log('Photo uploaded:', photoData);
-      const foo = await generateReport(); 
-      // this.uploadedPhotos.push(photoData);
+      this.uploadedPhotos.push(photoData);
       // You can add logic here to display the photo or save it to a backend
       alert(`Photo uploaded successfully! Total photos: ${this.uploadedPhotos.length}`);
+    },
+    onAnalysisComplete(analysisData) {
+      console.log('Analysis complete:', analysisData);
+      this.analysisResults.push(analysisData);
+      // Display analysis results to the user
+      alert(`Garden analysis complete! Check console for results.`);
+    },
+    toggleMenu() {
+      this.showMenu = !this.showMenu;
+    },
+    closeMenu() {
+      this.showMenu = false;
+    },
+    setUserType(type) {
+      this.userType = type;
+      this.closeMenu();
+      console.log('User type set to:', type);
     }
   }
 }
@@ -93,6 +162,177 @@ export default {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Hamburger Menu Styles */
+.hamburger-menu {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 2000;
+}
+
+.hamburger-btn {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn:hover {
+  background: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.hamburger-btn span {
+  width: 20px;
+  height: 2px;
+  background: #333;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn.menu-open span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger-btn.menu-open span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-btn.menu-open span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -6px);
+}
+
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1999;
+}
+
+.menu-content {
+  position: fixed;
+  top: 0;
+  left: -300px;
+  width: 300px;
+  height: 100vh;
+  background: white;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  transition: left 0.3s ease;
+  z-index: 2001;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-content.menu-open {
+  left: 0;
+}
+
+.menu-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+}
+
+.menu-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.menu-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #666;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-close:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.menu-options {
+  flex: 1;
+  padding: 1rem 0;
+}
+
+.menu-option {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.menu-option:hover {
+  background: #f8f9fa;
+}
+
+.menu-option.active {
+  background: #e3f2fd;
+  border-left: 4px solid #2196F3;
+}
+
+.option-icon {
+  font-size: 1.5rem;
+  width: 2rem;
+  text-align: center;
+}
+
+.option-text {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.option-check {
+  color: #4CAF50;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.menu-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.current-selection {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+  text-align: center;
 }
 
 header {
