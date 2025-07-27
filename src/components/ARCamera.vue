@@ -46,8 +46,8 @@
     
     <div class="camera-controls">
       <div class="camera-instructions">
-        <p v-if="!capturedImage">📱 Point camera at your garden area to take a photo!</p>
-        <p v-if="capturedImage">📸 Photo captured! Analyze it or retake</p>
+        <p v-if="!capturedImage">📱 Take a photo with camera or 📁 upload from gallery</p>
+        <p v-if="capturedImage">📸 Photo ready! Analyze it or retake</p>
         <p v-if="!capturedImage">💡 Tip: Use switch camera to toggle between front/back</p>
       </div>
       
@@ -61,7 +61,19 @@
         <button v-if="!capturedImage" @click="switchCamera" class="camera-btn" :disabled="isLoading">
           🔄 Switch Camera
         </button>
+        <button v-if="!capturedImage" @click="triggerFileUpload" class="camera-btn upload-btn" :disabled="isLoading">
+          📁 Upload Photo
+        </button>
       </div>
+      
+      <!-- Hidden file input for photo upload -->
+      <input
+        ref="fileInput"
+        type="file"
+        accept="image/*"
+        @change="handleFileUpload"
+        style="display: none;"
+      />
     </div>
   </div>
 </template>
@@ -258,6 +270,52 @@ export default {
         this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
         this.initializeCamera();
       }
+    },
+    
+    triggerFileUpload() {
+      this.$refs.fileInput.click();
+    },
+    
+    handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.errorMessage = 'Please select a valid image file.';
+        return;
+      }
+      
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        this.errorMessage = 'Image file is too large. Please select an image smaller than 10MB.';
+        return;
+      }
+      
+      this.isLoading = true;
+      this.loadingMessage = 'Processing uploaded image...';
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.capturedImage = e.target.result;
+        this.showCamera = false;
+        
+        // Convert file to blob for consistency with camera capture
+        this.capturedBlob = file;
+        
+        this.isLoading = false;
+        
+        // Clear the file input for future uploads
+        event.target.value = '';
+      };
+      
+      reader.onerror = () => {
+        this.isLoading = false;
+        this.errorMessage = 'Failed to read the uploaded image. Please try again.';
+      };
+      
+      reader.readAsDataURL(file);
     }
   }
 }
@@ -453,6 +511,15 @@ export default {
 
 .analyze-btn:hover:not(:disabled) {
   background: #1976D2;
+  transform: translateY(-1px);
+}
+
+.upload-btn {
+  background: #9C27B0;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #7B1FA2;
   transform: translateY(-1px);
 }
 
