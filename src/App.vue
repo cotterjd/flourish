@@ -1,7 +1,7 @@
 <template>
   <div class="app">
     <!-- AR Camera Component -->
-    <ARCamera v-if="showAR" @close="closeAR" />
+    <ARCamera v-if="showAR" @close="closeAR" @photo-uploaded="onPhotoUploaded" @analysis-complete="onAnalysisComplete" />
     
     <header>
       <h1>🌱 Flourish</h1>
@@ -14,9 +14,8 @@
         <p>Start by adding a photo of a place you want help with</p>
         
         <div class="actions">
-          <button class="btn-primary" @click="addPlant">Add Photo</button>
-          <button class="btn-secondary" @click="viewGarden">View Garden</button>
-          <button class="btn-ar" @click="openAR">📱 AR View</button>
+          <button class="btn-secondary" @click="viewGarden">View Projects</button>
+          <button class="btn-ar" @click="openAR">Add Photo</button>
         </div>
         
         <div class="features">
@@ -45,6 +44,7 @@
 <script>
 import packageJson from "../package.json";
 import ARCamera from "./components/ARCamera.vue";
+import { generateReport } from "./utils"
 
 export default {
   name: 'App',
@@ -54,17 +54,18 @@ export default {
   data() {
     return {
       version: packageJson.version,
-      showAR: false
+      showAR: false,
+      uploadedPhotos: [],
+      analysisResults: []
     }
   },
   methods: {
-    addPlant() {
-      alert('Add Plant feature coming soon!');
-    },
-    viewGarden() {
-      alert('View Garden feature coming soon!');
+    async viewGarden() {
+      const foo = await generateReport(); 
+      console.log(`foo`, foo);
     },
     openAR() {
+      // call generateReport in utils
       // Check if device supports camera
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         this.showAR = true;
@@ -74,6 +75,13 @@ export default {
     },
     closeAR() {
       this.showAR = false;
+    },
+    async onPhotoUploaded(photoData) {
+      console.log('Photo uploaded:', photoData);
+      const foo = await generateReport(); 
+      // this.uploadedPhotos.push(photoData);
+      // You can add logic here to display the photo or save it to a backend
+      alert(`Photo uploaded successfully! Total photos: ${this.uploadedPhotos.length}`);
     }
   }
 }

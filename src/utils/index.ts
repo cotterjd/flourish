@@ -11,6 +11,23 @@ export interface Plant {
   location?: string;
 }
 
+export interface GenerateArgs {
+  after_image: string; // Base64 encoded image
+  before_image: string; // Optional Base64 encoded image
+  requested_tasks: string; // Optional tasks to perform
+}
+
+// add route for http://10.132.122.162:5000/analyze_landscaping
+export const generateReport = (args: GenerateArgs) => {
+  return fetch('http://10.132.122.162:5000/analyze_landscaping', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(args)
+  });
+}
+
 export const storage = {
   // Save data to localStorage
   save: (key: string, value: any): void => {

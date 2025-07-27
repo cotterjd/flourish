@@ -1,11 +1,11 @@
 <template>
-  <div class="ar-container">
-    <div class="ar-header">
-      <h3>🌱 AR Garden View</h3>
+  <div class="camera-container">
+    <div class="camera-header">
+      <h3>📸 Plant Photo Capture</h3>
       <button @click="$emit('close')" class="close-btn">✕</button>
     </div>
     
-    <div class="ar-scene-container">
+    <div class="camera-scene-container">
       <!-- Camera Video Stream -->
       <video
         ref="videoElement"
@@ -19,7 +19,7 @@
       <!-- Canvas for capturing photo -->
       <canvas
         ref="canvasElement"
-        :style="{ display: capturedImage ? 'block' : 'none' }"
+        style="display: none;"
         class="camera-canvas"
       ></canvas>
       
@@ -44,21 +44,22 @@
       </div>
     </div>
     
-    <div class="ar-controls">
-      <div class="ar-instructions">
-        <p>📱 Point camera at your plant to take a photo!</p>
-        <p>� Captured photos will be uploaded automatically</p>
+    <div class="camera-controls">
+      <div class="camera-instructions">
+        <p v-if="!capturedImage">📱 Point camera at your garden area to take a photo!</p>
+        <p v-if="capturedImage">📸 Photo captured! Analyze it or retake</p>
+        <p v-if="!capturedImage">💡 Tip: Use switch camera to toggle between front/back</p>
       </div>
       
-      <div class="ar-buttons">
-        <button @click="togglePlant" class="ar-btn" :disabled="isLoading">
-          {{ showPlant ? 'Hide Plant' : 'Show Plant' }}
+      <div class="camera-buttons">
+        <button @click="capturePhoto" class="camera-btn primary-capture" :disabled="isLoading || !cameraReady">
+          {{ capturedImage ? '🔄 Retake Photo' : '📸 Take Photo' }}
         </button>
-        <button @click="addWaterEffect" class="ar-btn" :disabled="isLoading">
-          💧 Water Plant
+        <button v-if="capturedImage" @click="analyzePhoto" class="camera-btn analyze-btn" :disabled="isLoading">
+          🔍 Analyze Garden
         </button>
-        <button @click="changePlantSize" class="ar-btn" :disabled="isLoading">
-          🔄 Change Size
+        <button v-if="!capturedImage" @click="switchCamera" class="camera-btn" :disabled="isLoading">
+          🔄 Switch Camera
         </button>
       </div>
     </div>
@@ -66,27 +67,28 @@
 </template>
 
 <script>
+import { generateReport } from '../utils/index.ts';
+
 export default {
   name: 'ARCamera',
-  emits: ['close'],
+  emits: ['close', 'photo-uploaded', 'analysis-complete'],
   data() {
     return {
-      showPlant: true,
       showCamera: true,
       capturedImage: null,
+      capturedBlob: null,
       isLoading: false,
       loadingMessage: '',
       errorMessage: '',
       stream: null,
-      plantScale: 0.5
+      cameraReady: false,
+      facingMode: 'environment' // Start with back camera
     }
   },
   async mounted() {
-    // Initialize camera
     await this.initializeCamera();
   },
   beforeUnmount() {
-    // Clean up camera stream
     this.stopCamera();
   },
   methods: {
@@ -97,7 +99,7 @@ export default {
         
         const constraints = {
           video: {
-            facingMode: 'environment', // Use back camera
+            facingMode: this.facingMode,
             width: { ideal: 1920 },
             height: { ideal: 1080 }
           }
@@ -106,11 +108,17 @@ export default {
         this.stream = await navigator.mediaDevices.getUserMedia(constraints);
         this.$refs.videoElement.srcObject = this.stream;
         
+        // Wait for video to be ready
+        await new Promise((resolve) => {
+          this.$refs.videoElement.onloadedmetadata = resolve;
+        });
+        
+        this.cameraReady = true;
         this.isLoading = false;
       } catch (error) {
         console.error('Error accessing camera:', error);
         this.isLoading = false;
-        this.errorMessage = 'Could not access camera. Please check permissions.';
+        this.errorMessage = 'Could not access camera. Please check permissions and try again.';
       }
     },
     
@@ -119,6 +127,7 @@ export default {
         this.stream.getTracks().forEach(track => track.stop());
         this.stream = null;
       }
+      this.cameraReady = false;
     },
     
     clearError() {
@@ -126,8 +135,14 @@ export default {
     },
     
     async capturePhoto() {
-      if (!this.$refs.videoElement || !this.$refs.canvasElement) {
+      if (!this.$refs.videoElement || !this.$refs.canvasElement || !this.cameraReady) {
         this.errorMessage = 'Camera not ready';
+        return;
+      }
+      
+      if (this.capturedImage) {
+        // Retake photo
+        this.retakePhoto();
         return;
       }
       
@@ -146,17 +161,14 @@ export default {
         // Draw video frame to canvas
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // Convert to blob
+        // Convert to blob and data URL
         const blob = await new Promise(resolve => {
-          canvas.toBlob(resolve, 'image/jpeg', 0.8);
+          canvas.toBlob(resolve, 'image/jpeg', 0.9);
         });
         
-        // Create image URL for preview
-        this.capturedImage = canvas.toDataURL('image/jpeg', 0.8);
+        this.capturedBlob = blob;
+        this.capturedImage = canvas.toDataURL('image/jpeg', 0.9);
         this.showCamera = false;
-        
-        // Upload the photo
-        await this.uploadPhoto(blob);
         
         this.isLoading = false;
       } catch (error) {
@@ -166,77 +178,85 @@ export default {
       }
     },
     
-    async uploadPhoto(blob) {
-      try {
-        this.loadingMessage = 'Uploading photo...';
-        
-        const formData = new FormData();
-        formData.append('photo', blob, `plant-photo-${Date.now()}.jpg`);
-        formData.append('timestamp', new Date().toISOString());
-        formData.append('type', 'plant-photo');
-        
-        // Mock upload - replace with actual endpoint
-        const response = await fetch('/api/upload-photo', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Upload failed: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log('Photo uploaded successfully:', result);
-        
-        // Emit success event to parent component
-        this.$emit('photo-uploaded', {
-          imageUrl: this.capturedImage,
-          uploadResult: result
-        });
-        
-      } catch (error) {
-        console.error('Error uploading photo:', error);
-        
-        // For demo purposes, simulate successful upload
-        console.log('Mock upload successful');
-        this.$emit('photo-uploaded', {
-          imageUrl: this.capturedImage,
-          uploadResult: { success: true, id: Date.now() }
-        });
-      }
-    },
-    
     retakePhoto() {
       this.capturedImage = null;
+      this.capturedBlob = null;
       this.showCamera = true;
       this.errorMessage = '';
     },
     
-    togglePlant() {
-      // Updated to capture photo instead of toggling plant
+    async analyzePhoto() {
       if (!this.capturedImage) {
-        this.capturePhoto();
-      } else {
-        this.retakePhoto();
+        this.errorMessage = 'No photo to analyze';
+        return;
+      }
+      
+      try {
+        this.isLoading = true;
+        this.loadingMessage = 'Analyzing your garden...';
+        
+        // Convert data URL to base64 (remove data:image/jpeg;base64, prefix)
+        const base64Image = this.capturedImage.split(',')[1];
+        
+        const analysisArgs = {
+          after_image: base64Image,
+          before_image: '', // Optional - could be used for before/after comparisons
+          requested_tasks: 'Analyze this garden image and provide recommendations for plant care, landscaping improvements, and garden maintenance.'
+        };
+        
+        const response = await generateReport(analysisArgs);
+        
+        if (!response.ok) {
+          throw new Error(`Analysis failed: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        // Emit events to parent component
+        this.$emit('photo-uploaded', {
+          imageUrl: this.capturedImage,
+          blob: this.capturedBlob,
+          timestamp: new Date().toISOString()
+        });
+        
+        this.$emit('analysis-complete', {
+          imageUrl: this.capturedImage,
+          analysis: result,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Close camera after successful analysis
+        this.$emit('close');
+        
+      } catch (error) {
+        console.error('Error analyzing photo:', error);
+        this.isLoading = false;
+        this.errorMessage = 'Failed to analyze photo. Please check your connection and try again.';
       }
     },
     
-    addWaterEffect() {
-      // Updated to capture photo
-      if (!this.capturedImage) {
-        this.capturePhoto();
-      } else {
-        // If photo already captured, could add some effect or retake
-        this.retakePhoto();
-      }
-    },
-    
-    changePlantSize() {
-      // Updated to capture photo or clear current photo
-      if (!this.capturedImage) {
-        this.capturePhoto();
-      } else {
-        this.retakePhoto();
+    async switchCamera() {
+      try {
+        this.isLoading = true;
+        this.loadingMessage = 'Switching camera...';
+        
+        // Stop current stream
+        this.stopCamera();
+        
+        // Toggle facing mode
+        this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
+        
+        // Reinitialize with new camera
+        await this.initializeCamera();
+        
+      } catch (error) {
+        console.error('Error switching camera:', error);
+        this.isLoading = false;
+        this.errorMessage = 'Could not switch camera. Using current camera.';
+        
+        // Fallback to current camera
+        this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
+        this.initializeCamera();
       }
     }
   }
@@ -244,7 +264,7 @@ export default {
 </script>
 
 <style scoped>
-.ar-container {
+.camera-container {
   position: fixed;
   top: 0;
   left: 0;
@@ -256,7 +276,7 @@ export default {
   flex-direction: column;
 }
 
-.ar-header {
+.camera-header {
   position: absolute;
   top: 0;
   left: 0;
@@ -270,7 +290,7 @@ export default {
   z-index: 1001;
 }
 
-.ar-header h3 {
+.camera-header h3 {
   margin: 0;
   font-size: 1.2rem;
 }
@@ -287,13 +307,14 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.2s ease;
 }
 
 .close-btn:hover {
   background: #cc3333;
 }
 
-.ar-scene-container {
+.camera-scene-container {
   flex: 1;
   position: relative;
   overflow: hidden;
@@ -358,6 +379,7 @@ export default {
   border-radius: 8px;
   text-align: center;
   z-index: 1002;
+  max-width: 80%;
 }
 
 .error-btn {
@@ -370,7 +392,7 @@ export default {
   cursor: pointer;
 }
 
-.ar-controls {
+.camera-controls {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -381,46 +403,72 @@ export default {
   z-index: 1001;
 }
 
-.ar-instructions {
+.camera-instructions {
   text-align: center;
   margin-bottom: 1rem;
 }
 
-.ar-instructions p {
+.camera-instructions p {
   margin: 0.25rem 0;
   font-size: 0.9rem;
   opacity: 0.8;
 }
 
-.ar-buttons {
+.camera-buttons {
   display: flex;
   gap: 0.5rem;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.ar-btn {
+.camera-btn {
   background: #4CAF50;
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
 
-.ar-btn:hover:not(:disabled) {
+.primary-capture {
+  background: #FF6B6B;
+  font-weight: bold;
+  flex: 1;
+  max-width: 200px;
+}
+
+.primary-capture:hover:not(:disabled) {
+  background: #FF5252;
+  transform: translateY(-1px);
+}
+
+.analyze-btn {
+  background: #2196F3;
+  flex: 1;
+  max-width: 200px;
+}
+
+.analyze-btn:hover:not(:disabled) {
+  background: #1976D2;
+  transform: translateY(-1px);
+}
+
+.camera-btn:hover:not(:disabled) {
   background: #45a049;
+  transform: translateY(-1px);
 }
 
-.ar-btn:active:not(:disabled) {
-  transform: scale(0.95);
+.camera-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
-.ar-btn:disabled {
+.camera-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 @keyframes spin {
@@ -429,16 +477,21 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .ar-header h3 {
+  .camera-header h3 {
     font-size: 1rem;
   }
   
-  .ar-buttons {
+  .camera-buttons {
     flex-direction: column;
   }
   
-  .ar-btn {
+  .camera-btn {
     width: 100%;
+    max-width: none;
+  }
+  
+  .camera-controls {
+    padding: 0.75rem;
   }
 }
 </style>
