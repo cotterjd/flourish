@@ -11,23 +11,40 @@ export interface Plant {
   location?: string;
 }
 
-// Updated: Added contractor_accomplishments
+// Updated: 'after_image' changed to 'after_images' array, added 'contractor_accomplishments'
 export interface GenerateArgs {
-  after_image: string; // Base64 encoded image
-  before_image: string; // Base64 encoded image
+  before_image: string; // Base64 encoded image for the 'before' state
+  after_images: string[]; // Array of Base64 encoded images for the 'after' state
   requested_tasks: string; // Newline-separated string of tasks
-  contractor_accomplishments?: string; // Optional text from contractor
+  contractor_accomplishments?: string; // Optional text from contractor about accomplishments
 }
 
 // Interface for backend response from analyze_landscaping
-// Updated: Added before_analysis_text and original_tasks_text
 export interface ReportResponse {
   report: string; // The full markdown report
   before_analysis_text: string; // AI's analysis of the before image
   original_tasks_text: string; // The user's original requested tasks
   contractor_accomplishments_text?: string; // Contractor's claimed accomplishments (if provided)
-  error?: string; // Optional error field from the backend
+  error?: string; // Optional error field
 }
+
+// NEW: Interface for arguments to the /ask_question endpoint
+export interface AskQuestionArgs {
+  question: string;
+  before_image_data_url?: string; // Optional: The base64 URL of the before image
+  after_image_data_urls?: string[]; // Optional: Array of base64 URLs of after images
+  before_analysis_text?: string; // Optional: AI's analysis text of the before image
+  original_tasks_text?: string; // Optional: User's original tasks text
+  contractor_accomplishments_text?: string; // Optional: Contractor's accomplishments text
+  chat_history?: { role: string; content: string; }[]; // Optional: Previous chat messages
+}
+
+// NEW: Interface for response from the /ask_question endpoint
+export interface AskQuestionResponse {
+  answer: string; // The AI's answer to the question
+  error?: string; // Optional error field
+}
+
 
 // ============================================================================
 // HTTP POST Methods
@@ -47,18 +64,40 @@ export const generateReport = async (args: GenerateArgs): Promise<ReportResponse
 
     if (!response.ok) {
       const errorData = await response.json();
-      // Throw an error with the backend's message for better debugging
       throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
     }
 
-    return response.json(); // Returns a Promise that resolves with the parsed JSON data
+    return response.json();
   } catch (error) {
     console.error("Error generating report:", error);
-    // You might want more specific error handling here for the UI
-    // For example, return a default ReportResponse with an error message
-    throw error; // Re-throw to be caught by the calling function
+    throw error;
   }
 };
+
+// NEW: Route for http://10.132.122.162:5000/ask_question
+// This method sends a question and context to the backend for AI response.
+export const askQuestion = async (args: AskQuestionArgs): Promise<AskQuestionResponse> => {
+  try {
+    const response = await fetch('http://10.132.122.162:5000/ask_question', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(args)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error asking question:", error);
+    throw error;
+  }
+};
+
 
 // Placeholder for a future POST method to add/update plant data on a backend server.
 // This would require a corresponding Flask route (e.g., '/plants') in app.py.
