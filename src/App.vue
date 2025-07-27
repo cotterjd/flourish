@@ -4,17 +4,17 @@
     <ARCamera v-if="showAR" @close="closeAR" />
     
     <header>
-      <h1>🌱 Garden App</h1>
-      <p>Track your plants and garden progress</p>
+      <h1>🌱 Flourish</h1>
+      <p>Gardening dreams coming true and staying true</p>
     </header>
     
     <main>
       <div class="welcome">
         <h2>Welcome to your digital garden!</h2>
-        <p>Start by adding your first plant to track its growth and care schedule.</p>
+        <p>Start by adding a photo of a place you want help with</p>
         
         <div class="actions">
-          <button class="btn-primary" @click="addPlant">Add Plant</button>
+          <button class="btn-primary" @click="addPlant">Add Photo</button>
           <button class="btn-secondary" @click="viewGarden">View Garden</button>
           <button class="btn-ar" @click="openAR">📱 AR View</button>
         </div>

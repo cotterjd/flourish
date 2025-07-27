@@ -6,196 +6,58 @@
     </div>
     
     <div class="ar-scene-container">
-      <!-- AR.js Scene -->
-      <a-scene
-        ref="arScene"
-        embedded
-        ar-mode
-        device-orientation-permission-ui="enabled: false"
-        gesture-detector
-        loading-screen="enabled: false"
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-        style="height: 100%; width: 100%;"
-      >
-        <!-- Camera -->
-        <a-camera
-          gps-camera
-          rotation-reader
-          look-controls-enabled="false"
-          arjs-look-controls="smoothingFactor: 0.1"
-        ></a-camera>
-        
-        <!-- AR Content - Floating Plant -->
-        <a-entity
-          id="plantModel"
-          position="0 0 -3"
-          scale="0.5 0.5 0.5"
-          animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"
-          gesture-handler="minScale: 0.25; maxScale: 10"
-        >
-          <!-- Simple 3D Plant using A-Frame primitives -->
-          <!-- Pot -->
-          <a-cylinder
-            position="0 0 0"
-            radius="0.8"
-            height="1"
-            color="#8B4513"
-            material="metalness: 0.2; roughness: 0.8"
-          ></a-cylinder>
-          
-          <!-- Soil -->
-          <a-cylinder
-            position="0 0.4 0"
-            radius="0.75"
-            height="0.2"
-            color="#654321"
-          ></a-cylinder>
-          
-          <!-- Plant Stem -->
-          <a-cylinder
-            position="0 1.5 0"
-            radius="0.05"
-            height="2"
-            color="#228B22"
-          ></a-cylinder>
-          
-          <!-- Leaves -->
-          <a-sphere
-            position="-0.3 2.2 0"
-            radius="0.3"
-            color="#32CD32"
-            material="metalness: 0; roughness: 0.9"
-          ></a-sphere>
-          <a-sphere
-            position="0.3 2.5 0"
-            radius="0.35"
-            color="#228B22"
-            material="metalness: 0; roughness: 0.9"
-          ></a-sphere>
-          <a-sphere
-            position="0 2.8 0.2"
-            radius="0.25"
-            color="#32CD32"
-            material="metalness: 0; roughness: 0.9"
-          ></a-sphere>
-          
-          <!-- Floating Info Panel -->
-          <a-plane
-            position="0 3.5 0"
-            width="2"
-            height="0.8"
-            color="#ffffff"
-            material="opacity: 0.9"
-            look-at="[camera]"
-          >
-            <a-text
-              value="Virtual Plant\nTap to interact!"
-              position="0 0 0.01"
-              align="center"
-              color="#333333"
-              font="dejavu"
-              width="6"
-            ></a-text>
-          </a-plane>
-        </a-entity>
-        
-        <!-- Floating Garden Tips -->
-        <a-entity
-          position="2 1 -2"
-          animation="property: position; to: 2 1.5 -2; dir: alternate; loop: true; dur: 3000"
-        >
-          <a-plane
-            width="1.5"
-            height="1"
-            color="#4CAF50"
-            material="opacity: 0.8"
-            look-at="[camera]"
-          >
-            <a-text
-              value="💡 Tip:\nWater regularly!"
-              align="center"
-              color="white"
-              position="0 0 0.01"
-              width="8"
-            ></a-text>
-          </a-plane>
-        </a-entity>
-        
-        <!-- Interactive Watering Can -->
-        <a-entity
-          id="wateringCan"
-          position="-2 0.5 -2"
-          scale="0.3 0.3 0.3"
-          animation="property: rotation; to: 0 360 0; loop: true; dur: 15000"
-          gesture-handler
-        >
-          <!-- Watering Can Body -->
-          <a-cylinder
-            position="0 0 0"
-            radius="0.5"
-            height="1"
-            color="#4169E1"
-          ></a-cylinder>
-          
-          <!-- Spout -->
-          <a-cylinder
-            position="0.7 0.3 0"
-            radius="0.1"
-            height="0.8"
-            rotation="0 0 45"
-            color="#4169E1"
-          ></a-cylinder>
-          
-          <!-- Handle -->
-          <a-torus
-            position="-0.4 0.2 0"
-            radius="0.3"
-            radius-tubular="0.05"
-            color="#4169E1"
-            rotation="90 0 0"
-          ></a-torus>
-          
-          <!-- Label -->
-          <a-plane
-            position="0 1.2 0"
-            width="1"
-            height="0.3"
-            color="white"
-            material="opacity: 0.9"
-            look-at="[camera]"
-          >
-            <a-text
-              value="Watering Can"
-              align="center"
-              color="#333"
-              position="0 0 0.01"
-              width="12"
-            ></a-text>
-          </a-plane>
-        </a-entity>
-        
-        <!-- Ambient Light -->
-        <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>
-        
-        <!-- Directional Light -->
-        <a-light type="directional" position="2 4 2" color="#ffffff" intensity="0.8"></a-light>
-      </a-scene>
+      <!-- Camera Video Stream -->
+      <video
+        ref="videoElement"
+        :style="{ display: showCamera ? 'block' : 'none' }"
+        autoplay
+        playsinline
+        muted
+        class="camera-video"
+      ></video>
+      
+      <!-- Canvas for capturing photo -->
+      <canvas
+        ref="canvasElement"
+        :style="{ display: capturedImage ? 'block' : 'none' }"
+        class="camera-canvas"
+      ></canvas>
+      
+      <!-- Image preview -->
+      <img
+        v-if="capturedImage"
+        :src="capturedImage"
+        alt="Captured photo"
+        class="captured-image"
+      />
+      
+      <!-- Loading state -->
+      <div v-if="isLoading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>{{ loadingMessage }}</p>
+      </div>
+      
+      <!-- Error message -->
+      <div v-if="errorMessage" class="error-overlay">
+        <p>{{ errorMessage }}</p>
+        <button @click="clearError" class="error-btn">Dismiss</button>
+      </div>
     </div>
     
     <div class="ar-controls">
       <div class="ar-instructions">
-        <p>📱 Move your device around to see AR objects!</p>
-        <p>👆 Tap objects to interact with them</p>
+        <p>📱 Point camera at your plant to take a photo!</p>
+        <p>� Captured photos will be uploaded automatically</p>
       </div>
       
       <div class="ar-buttons">
-        <button @click="togglePlant" class="ar-btn">
+        <button @click="togglePlant" class="ar-btn" :disabled="isLoading">
           {{ showPlant ? 'Hide Plant' : 'Show Plant' }}
         </button>
-        <button @click="addWaterEffect" class="ar-btn">
+        <button @click="addWaterEffect" class="ar-btn" :disabled="isLoading">
           💧 Water Plant
         </button>
-        <button @click="changePlantSize" class="ar-btn">
+        <button @click="changePlantSize" class="ar-btn" :disabled="isLoading">
           🔄 Change Size
         </button>
       </div>
@@ -210,167 +72,171 @@ export default {
   data() {
     return {
       showPlant: true,
-      isARSupported: false,
+      showCamera: true,
+      capturedImage: null,
+      isLoading: false,
+      loadingMessage: '',
+      errorMessage: '',
+      stream: null,
       plantScale: 0.5
     }
   },
   async mounted() {
-    // Import A-Frame and AR.js
-    await this.loadARLibraries();
-    
-    // Check if AR is supported
-    this.checkARSupport();
-    
-    // Initialize gesture controls
-    this.initializeGestures();
+    // Initialize camera
+    await this.initializeCamera();
+  },
+  beforeUnmount() {
+    // Clean up camera stream
+    this.stopCamera();
   },
   methods: {
-    async loadARLibraries() {
+    async initializeCamera() {
       try {
-        // Load A-Frame
-        if (!window.AFRAME) {
-          const aframeScript = document.createElement('script');
-          aframeScript.src = 'https://aframe.io/releases/1.4.0/aframe.min.js';
-          document.head.appendChild(aframeScript);
-          
-          await new Promise(resolve => {
-            aframeScript.onload = resolve;
-          });
+        this.isLoading = true;
+        this.loadingMessage = 'Accessing camera...';
+        
+        const constraints = {
+          video: {
+            facingMode: 'environment', // Use back camera
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          }
+        };
+        
+        this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+        this.$refs.videoElement.srcObject = this.stream;
+        
+        this.isLoading = false;
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        this.isLoading = false;
+        this.errorMessage = 'Could not access camera. Please check permissions.';
+      }
+    },
+    
+    stopCamera() {
+      if (this.stream) {
+        this.stream.getTracks().forEach(track => track.stop());
+        this.stream = null;
+      }
+    },
+    
+    clearError() {
+      this.errorMessage = '';
+    },
+    
+    async capturePhoto() {
+      if (!this.$refs.videoElement || !this.$refs.canvasElement) {
+        this.errorMessage = 'Camera not ready';
+        return;
+      }
+      
+      try {
+        this.isLoading = true;
+        this.loadingMessage = 'Capturing photo...';
+        
+        const video = this.$refs.videoElement;
+        const canvas = this.$refs.canvasElement;
+        const context = canvas.getContext('2d');
+        
+        // Set canvas dimensions to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw video frame to canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert to blob
+        const blob = await new Promise(resolve => {
+          canvas.toBlob(resolve, 'image/jpeg', 0.8);
+        });
+        
+        // Create image URL for preview
+        this.capturedImage = canvas.toDataURL('image/jpeg', 0.8);
+        this.showCamera = false;
+        
+        // Upload the photo
+        await this.uploadPhoto(blob);
+        
+        this.isLoading = false;
+      } catch (error) {
+        console.error('Error capturing photo:', error);
+        this.isLoading = false;
+        this.errorMessage = 'Failed to capture photo. Please try again.';
+      }
+    },
+    
+    async uploadPhoto(blob) {
+      try {
+        this.loadingMessage = 'Uploading photo...';
+        
+        const formData = new FormData();
+        formData.append('photo', blob, `plant-photo-${Date.now()}.jpg`);
+        formData.append('timestamp', new Date().toISOString());
+        formData.append('type', 'plant-photo');
+        
+        // Mock upload - replace with actual endpoint
+        const response = await fetch('/api/upload-photo', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
         }
         
-        // Load AR.js
-        if (!window.THREEx) {
-          const arScript = document.createElement('script');
-          arScript.src = 'https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.0/aframe/build/aframe-ar.min.js';
-          document.head.appendChild(arScript);
-          
-          await new Promise(resolve => {
-            arScript.onload = resolve;
-          });
-        }
+        const result = await response.json();
+        console.log('Photo uploaded successfully:', result);
         
-        // Load gesture controls
-        const gestureScript = document.createElement('script');
-        gestureScript.src = 'https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.controls.min.js';
-        document.head.appendChild(gestureScript);
+        // Emit success event to parent component
+        this.$emit('photo-uploaded', {
+          imageUrl: this.capturedImage,
+          uploadResult: result
+        });
         
       } catch (error) {
-        console.error('Failed to load AR libraries:', error);
-      }
-    },
-    
-    checkARSupport() {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        this.isARSupported = true;
-      } else {
-        console.warn('AR not supported on this device');
-      }
-    },
-    
-    initializeGestures() {
-      // Register gesture component for A-Frame
-      if (window.AFRAME) {
-        AFRAME.registerComponent('gesture-handler', {
-          schema: {
-            enabled: { default: true },
-            rotationFactor: { default: 5 },
-            minScale: { default: 0.3 },
-            maxScale: { default: 8 },
-          },
-          
-          init: function () {
-            this.handleScale = this.handleScale.bind(this);
-            this.handleRotation = this.handleRotation.bind(this);
-            
-            this.isVisible = false;
-            this.initialScale = this.el.object3D.scale.clone();
-            this.scaleFactor = 1;
-            
-            this.el.sceneEl.addEventListener('markerFound', (e) => {
-              this.isVisible = true;
-            });
-            
-            this.el.sceneEl.addEventListener('markerLost', (e) => {
-              this.isVisible = false;
-            });
-          },
-          
-          handleRotation: function (event) {
-            if (this.isVisible) {
-              this.el.object3D.rotation.y += event.detail.rotationDelta * this.data.rotationFactor;
-            }
-          },
-          
-          handleScale: function (event) {
-            if (this.isVisible) {
-              this.scaleFactor *= 1 + event.detail.spreadDelta / event.detail.startSpread;
-              this.scaleFactor = Math.min(Math.max(this.scaleFactor, this.data.minScale), this.data.maxScale);
-              this.el.object3D.scale.x = this.scaleFactor * this.initialScale.x;
-              this.el.object3D.scale.y = this.scaleFactor * this.initialScale.y;
-              this.el.object3D.scale.z = this.scaleFactor * this.initialScale.z;
-            }
-          },
+        console.error('Error uploading photo:', error);
+        
+        // For demo purposes, simulate successful upload
+        console.log('Mock upload successful');
+        this.$emit('photo-uploaded', {
+          imageUrl: this.capturedImage,
+          uploadResult: { success: true, id: Date.now() }
         });
       }
     },
     
+    retakePhoto() {
+      this.capturedImage = null;
+      this.showCamera = true;
+      this.errorMessage = '';
+    },
+    
     togglePlant() {
-      const plant = document.querySelector('#plantModel');
-      if (plant) {
-        this.showPlant = !this.showPlant;
-        plant.setAttribute('visible', this.showPlant);
+      // Updated to capture photo instead of toggling plant
+      if (!this.capturedImage) {
+        this.capturePhoto();
+      } else {
+        this.retakePhoto();
       }
     },
     
     addWaterEffect() {
-      // Create water particle effect
-      const plant = document.querySelector('#plantModel');
-      if (plant) {
-        // Create temporary water droplets
-        for (let i = 0; i < 10; i++) {
-          const droplet = document.createElement('a-sphere');
-          droplet.setAttribute('position', `${Math.random() * 2 - 1} ${3 + Math.random()} ${Math.random() * 2 - 1}`);
-          droplet.setAttribute('radius', '0.05');
-          droplet.setAttribute('color', '#00BFFF');
-          droplet.setAttribute('animation', {
-            property: 'position',
-            to: `${Math.random() * 2 - 1} 0 ${Math.random() * 2 - 1}`,
-            dur: 2000,
-            easing: 'easeInQuad'
-          });
-          
-          plant.appendChild(droplet);
-          
-          // Remove droplet after animation
-          setTimeout(() => {
-            if (droplet.parentNode) {
-              droplet.parentNode.removeChild(droplet);
-            }
-          }, 2100);
-        }
-        
-        // Make plant grow slightly
-        const currentScale = this.plantScale;
-        this.plantScale = Math.min(currentScale * 1.1, 1.0);
-        plant.setAttribute('scale', `${this.plantScale} ${this.plantScale} ${this.plantScale}`);
+      // Updated to capture photo
+      if (!this.capturedImage) {
+        this.capturePhoto();
+      } else {
+        // If photo already captured, could add some effect or retake
+        this.retakePhoto();
       }
     },
     
     changePlantSize() {
-      const plant = document.querySelector('#plantModel');
-      if (plant) {
-        // Cycle through different sizes
-        const sizes = [0.3, 0.5, 0.8, 1.0];
-        const currentIndex = sizes.indexOf(this.plantScale);
-        const nextIndex = (currentIndex + 1) % sizes.length;
-        this.plantScale = sizes[nextIndex];
-        
-        plant.setAttribute('animation__scale', {
-          property: 'scale',
-          to: `${this.plantScale} ${this.plantScale} ${this.plantScale}`,
-          dur: 1000,
-          easing: 'easeInOutQuad'
-        });
+      // Updated to capture photo or clear current photo
+      if (!this.capturedImage) {
+        this.capturePhoto();
+      } else {
+        this.retakePhoto();
       }
     }
   }
@@ -431,6 +297,77 @@ export default {
   flex: 1;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-video,
+.camera-canvas,
+.captured-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.captured-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 1002;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.error-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 0, 0, 0.9);
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  z-index: 1002;
+}
+
+.error-btn {
+  background: white;
+  color: #ff0000;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  cursor: pointer;
 }
 
 .ar-controls {
@@ -473,12 +410,22 @@ export default {
   transition: background 0.2s ease;
 }
 
-.ar-btn:hover {
+.ar-btn:hover:not(:disabled) {
   background: #45a049;
 }
 
-.ar-btn:active {
+.ar-btn:active:not(:disabled) {
   transform: scale(0.95);
+}
+
+.ar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {
